@@ -310,3 +310,31 @@ footer { max-width: 1360px; margin: 0 auto; padding: 10px 24px 40px; color: var(
   body { background: #fff; }
   .card { box-shadow: none; }
 }
+
+/* ---------- simulación 3D ---------- */
+.s3-card { padding: 0; overflow: hidden; }
+.s3-wrap { position: relative; height: 660px; }
+.s3-canvas { position: absolute; inset: 0; background: var(--bg-2); }
+.s3-canvas canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; touch-action: none; }
+.s3-canvas canvas:active { cursor: grabbing; }
+.s3-panel { position: absolute; background: rgba(255, 255, 255, .92); backdrop-filter: blur(6px); border-radius: var(--radius-sm); box-shadow: var(--shadow); padding: 12px 14px; font-size: 12.5px; }
+.s3-tl { top: 14px; left: 14px; width: 230px; }
+.s3-tr { top: 14px; right: 14px; }
+.s3-tr table { font-size: 12px; }
+.s3-tr th, .s3-tr td { padding: 5px 7px; }
+.s3-br { bottom: 40px; right: 14px; width: 260px; }
+.s3-clock { display: flex; justify-content: space-between; align-items: baseline; }
+.s3-clock b { font-size: 26px; font-weight: 800; color: var(--navy); }
+.s3-kpis { display: grid; gap: 7px; }
+.s3k span { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+.s3k b { font-size: 16px; }
+.s3k small { display: block; font-size: 11px; color: var(--ink-2); }
+.s3-help { position: absolute; bottom: 10px; left: 14px; background: rgba(255, 255, 255, .8); padding: 3px 10px; border-radius: 999px; }
+@media (max-width: 1100px) { .s3-tr { display: none; } }
+@media (max-width: 760px) {
+  .s3-wrap { height: auto; }
+  .s3-canvas { position: relative; height: 420px; }
+  .s3-panel { position: static; width: auto; margin: 10px; box-shadow: none; border: 1px solid var(--line); }
+  .s3-tr { display: block; overflow-x: auto; }
+  .s3-help { position: static; display: block; margin: 0 10px 10px; }
+}

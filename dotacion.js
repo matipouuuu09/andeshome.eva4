@@ -328,5 +328,11 @@
       run();
     },
     rerender() { if (last) render(); },
+    // datos para la simulación 3D
+    snapshot() {
+      const r = last || simular(P);
+      return { P: JSON.parse(JSON.stringify(P)), PROD: { ...PROD }, ROSTER, AREAS, TURNOS, COLOR, INFO, ESC, req: r.req, disp: r.disp, asg: r.asg, drv: r.drv, pres };
+    },
+    setEsc(e) { if (ESC[e]) { P.esc = e; run(); } },
   };
 })();
