@@ -1,6 +1,6 @@
 # AndesHome · CD Pudahuel — Plataforma de operación logística
 
-Sitio web estático para el Centro de Distribución Pudahuel de **AndesHome Chile S.A.** (caso GLA1104). Integra cuatro módulos que trabajan con los datos reales de `Base_Datos_GLA1104_AndesHome_v2.xlsx`:
+Sitio web estático para el Centro de Distribución Pudahuel de **AndesHome Chile S.A.** (caso GLA1104). Integra cinco módulos que trabajan con los datos reales de `Base_Datos_GLA1104_AndesHome_v2.xlsx`:
 
 | Módulo | Qué hace | Hojas de la base | Iniciativa del informe |
 |---|---|---|---|
@@ -8,13 +8,14 @@ Sitio web estático para el Centro de Distribución Pudahuel de **AndesHome Chil
 | **Agendamiento de camiones** | Formulario de reserva de andén (recepción y despacho) con validación de patente, RUT y teléfono; duración calculada por pallets; bloques disponibles en 24 andenes; comprobante imprimible; tablero del día con check-in → operación → cierre; política de ASN obligatorio; analítica histórica de dock-to-stock | Recepciones, Proveedores, Transportistas | I8 · I9 |
 | **Mini WMS** | Inventario de 450 SKU (sistema vs físico), filtros y orden, conteo cíclico, reubicación, ingresos/salidas, re-slotting ABC masivo, ocupación por zona, matriz zona actual vs ideal, equipos MHE, órdenes con sus líneas, calidad de datos y exportación CSV | SKU_Master, Inventario, Layout_Capacidad, Equipos_MHE, Ordenes_Muestra, Lineas_Pedido, Calidad_Datos | I6 · I7 |
 | **Simulación de olas** | Arma un turno con pedidos y líneas reales, lo libera en olas fijas o dinámicas (límite WIP), con picking discreto, por lotes o por zona; muestra Gantt, carga vs capacidad, cumplimiento de corte por canal, horas extra, errores y costo por pedido; guarda y compara escenarios | Ordenes_Muestra, Lineas_Pedido, Productividad, Supuestos | I3 · I4 · I5 · I18 |
+| **Distribución de personal** | Simulador de distribución de empleados: reparte a los 180 colaboradores por área (Inbound, Picking, Bulky, Packing, Despacho, Inventario) y turno según el escenario de demanda (normal, temporada baja, peak junio, CyberDay 2027); descuenta el ausentismo 90d de cada persona; reasigna polifuncionales según sus competencias (RF, WMS, MMC); costea el déficit con horas extra y temporales; simula 100 días con ausencias y demanda aleatorias; exporta la asignación a CSV | Turnos_Competencias, Pedidos_Diarios, Lineas_Pedido, Supuestos | I18 |
 
 Los módulos están conectados: al **cerrar una cita de recepción** con detalle de SKU, el stock entra al Mini WMS; el **re-slotting** del WMS cambia los recorridos de la simulación de olas; y el dashboard muestra el estado en vivo de la agenda y del inventario.
 
 ## Estructura
 
 ```
-├── index.html            # SPA con 4 vistas (navegación por #hash)
+├── index.html            # SPA con 5 vistas (navegación por #hash)
 ├── css/styles.css        # Estilo minimalista: fondo celeste claro, tarjetas blancas, acentos azul marino y coral
 ├── js/
 │   ├── core.js           # utilidades, formato es-CL, estado (localStorage), validación RUT/patente, estilos Chart.js
@@ -22,6 +23,7 @@ Los módulos están conectados: al **cerrar una cita de recepción** con detalle
 │   ├── agenda.js         # Agendamiento de camiones / YMS ligero
 │   ├── dashboard.js      # Dashboard interactivo
 │   ├── waves.js          # Simulador de olas de picking
+│   ├── dotacion.js       # Simulador de distribución de empleados
 │   └── app.js            # router e inicialización
 ├── data/*.js             # datos extraídos del Excel (generados)
 ├── vendor/chart.umd.min.js  # Chart.js 4 (incluido, no depende de CDN)

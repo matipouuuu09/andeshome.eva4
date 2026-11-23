@@ -152,4 +152,29 @@ lines = [[x.Pedido, x.SKU, x.ABC, x["Zona pick"], int(x["Cantidad pedida"]), int
           r(x["Distancia m"], 1), r(x["Peso unit kg"], 1)]
          for _, x in ln.iterrows()]
 write("lineas", "AH_LIN", lines)
+# ---------- simulador de distribución de empleados ----------
+tc = sheet("Turnos_Competencias")
+si = lambda v: 1 if v == "Sí" else 0
+roster = [[x.Colaborador, x.Turno, x["Área"], x.Contrato, r(x["Antigüedad años"], 1), si(x.RF), si(x.WMS),
+           si(x.Lean), si(x.MMC), si(x.Superusuario), r(x["Ausentismo 90d"], 4), x["Brecha formación"]]
+          for _, x in tc.iterrows()]
+pdia = sheet("Pedidos_Diarios")
+pdia["mes"] = pdia["Fecha"].dt.month
+
+
+def prom(df):
+    n = df["Fecha"].nunique()
+    g = df.groupby("Canal")[["Pedidos", "Líneas", "Unidades"]].sum() / n
+    return {c: {"ped": round(v.Pedidos), "lin": round(v["Líneas"]), "uni": round(v.Unidades)} for c, v in g.iterrows()}
+
+
+lp = sheet("Lineas_Pedido").merge(sheet("Ordenes_Muestra")[["Pedido", "Canal"]], on="Pedido")
+pack = (lp.groupby("Canal")["Pack seg"].sum() / lp.groupby("Canal")["Pedido"].nunique()).round(1).to_dict()
+personal = {
+    "roster": roster,
+    "demanda": {"base": prom(pdia[pdia.mes < 6]), "peak": prom(pdia[pdia.mes == 6])},
+    "bulkyShare": r((lp["Zona pick"] == "D-Bulky").mean(), 4),
+    "packSeg": pack,
+}
+write("personal", "AH_PERS", personal)
 print("Listo.")

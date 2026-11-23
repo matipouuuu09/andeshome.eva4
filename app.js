@@ -3,7 +3,7 @@
    ========================================================= */
 (() => {
   const { $, $$ } = AH;
-  const VIEWS = ["dashboard", "agenda", "wms", "waves"];
+  const VIEWS = ["dashboard", "agenda", "wms", "waves", "dotacion"];
 
   function route() {
     const v = (location.hash || "#dashboard").slice(1);
@@ -13,6 +13,7 @@
     $("#nav").classList.remove("open");
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
     if (view === "dashboard") AH.dashboard.refresh();
+    if (view === "dotacion") AH.dotacion.rerender();
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -21,6 +22,7 @@
     AH.agenda.init();
     AH.dashboard.init();
     AH.waves.init();
+    AH.dotacion.init();
     window.addEventListener("hashchange", route);
     route();
     $("#overlay").addEventListener("click", AH.closeDrawer);
