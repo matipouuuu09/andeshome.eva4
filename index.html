@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AndesHome · CD Pudahuel — Agenda de andenes, Mini WMS y simulación de olas</title>
+  <meta name="description" content="Plataforma de agendamiento de camiones, mini WMS, dashboard interactivo y simulador de productividad por olas de picking para el Centro de Distribución Pudahuel de AndesHome Chile S.A.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230b2e4f'/><rect x='6' y='24' width='20' height='3' rx='1.5' fill='%23eb6834'/><text x='16' y='20' font-size='13' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'>AH</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#dashboard">
+      <div class="brand-mark">AH</div>
+      <div><b>AndesHome · CD Pudahuel</b><span>Operación logística omnicanal</span></div>
+    </a>
+    <button class="btn ghost sm menu-btn" id="menuBtn" aria-label="Menú">☰ Menú</button>
+    <nav class="nav" id="nav">
+      <a href="#dashboard">Dashboard</a>
+      <a href="#agenda">Agendamiento</a>
+      <a href="#wms">Mini WMS</a>
+      <a href="#waves">Simulación de olas</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- =================================================== DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Torre de control</p>
+        <h1>Desempeño del CD Pudahuel</h1>
+        <p>Indicadores de servicio, inbound, transporte y costos con los datos del caso (ene–jun 2026). Filtra por canal y período para segmentar el OTIF y el backlog.</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px 18px">
+      <div class="toolbar">
+        <select id="dCanal" aria-label="Canal"></select>
+        <label class="label-sm">Desde <input type="date" id="dDesde"></label>
+        <label class="label-sm">Hasta <input type="date" id="dHasta"></label>
+        <div class="seg" id="dGran"><button data-v="dia">Día</button><button data-v="semana" class="on">Semana</button><button data-v="mes">Mes</button></div>
+        <span style="flex:1"></span>
+        <button class="btn ghost sm" data-preset="pre">Ene–May</button>
+        <button class="btn ghost sm" data-preset="peak">Peak junio</button>
+        <button class="btn ghost sm" data-preset="all">Restablecer</button>
+      </div>
+    </div>
+
+    <div class="grid g-4 mt" id="dashKpis"></div>
+
+    <div class="grid g-2 mt">
+      <div class="card span-2">
+        <div class="card-head"><div><h2>Pedidos por canal</h2><p>Hoja Pedidos_Diarios · apilado por canal</p></div></div>
+        <div class="chart-box"><canvas id="chPedidos" aria-label="Pedidos por canal" role="img"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Backlog al cierre</h2><p>Pedidos pendientes al final del período</p></div></div>
+        <div class="chart-box short"><canvas id="chBacklog" role="img" aria-label="Backlog"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>OTIF vs meta</h2><p>Pedidos a tiempo / pedidos totales</p></div></div>
+        <div class="chart-box short"><canvas id="chOtifT" role="img" aria-label="OTIF en el tiempo"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>OTIF por canal vs meta SLA</h2><p>Hoja SLA_Canales · metas diferenciadas</p></div></div>
+        <div class="chart-box short"><canvas id="chOtifCanal" role="img" aria-label="OTIF por canal"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Operación en vivo</h2><p>Estado actual de la agenda de andenes y del Mini WMS</p></div><a class="btn ghost sm" href="#agenda">Ir a la agenda →</a></div>
+        <div id="liveOps"></div>
+      </div>
+    </div>
+
+    <div class="mt-lg page-head" style="margin-bottom:12px"><div><p class="eyebrow">Línea base</p><h2>Junio 2026 frente a las metas del directorio</h2></div></div>
+    <div class="grid g-4" id="panelGrid"></div>
+
+    <div class="grid g-2 mt">
+      <div class="card">
+        <div class="card-head"><div><h2>Tendencia mensual 12M</h2><p>Hoja KPI_Mensual · jul 2025 – jun 2026</p></div><select id="dMetric" style="width:auto"></select></div>
+        <div class="chart-box"><canvas id="chMensual" role="img" aria-label="Tendencia mensual"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Pronóstico de demanda 36M</h2><p>Hoja Forecast_36M · real y escenarios</p></div></div>
+        <div class="chart-box"><canvas id="chForecast" role="img" aria-label="Pronóstico"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Cumplimiento de ASN por proveedor</h2><p>30 proveedores · verde ≥ 85% · amarillo 60–85% · naranjo &lt; 60%</p></div></div>
+        <div class="chart-box"><canvas id="chAsn" role="img" aria-label="ASN por proveedor"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Scorecard de transportistas</h2><p>Promedio de zonas · hoja Transportistas</p></div></div>
+        <div class="chart-box"><canvas id="chTrans" role="img" aria-label="Transportistas"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Pareto del costo de devoluciones</h2><p>900 devoluciones · naranjo = causas hasta el 80% acumulado</p></div></div>
+        <div id="paretoList"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Costo operacional: presupuesto vs real</h2><p>Hoja Costos_Operacion · suma de 12 categorías</p></div></div>
+        <div class="chart-box"><canvas id="chCostos" role="img" aria-label="Costos"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================== AGENDA -->
+  <section class="view" id="view-agenda">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Inbound y despacho · iniciativa I8</p>
+        <h1>Agendamiento de camiones en línea</h1>
+        <p>Reserva de andenes para proveedores y transportistas. El sistema calcula la duración según pallets, valida la disponibilidad de los 24 andenes y registra check-in, operación y cierre. Al cerrar una recepción, el stock entra al Mini WMS.</p>
+      </div>
+      <label class="check card" style="padding:10px 14px"><input type="checkbox" id="exigirAsn"> Exigir ASN en toda recepción</label>
+    </div>
+
+    <div class="grid g-side">
+      <!-- formulario -->
+      <form class="card" id="agendaForm" novalidate style="align-self:start">
+        <div class="card-head"><div><h2>Nueva cita</h2><p>Campos con * son obligatorios</p></div></div>
+        <div class="seg" id="tipoSeg" style="margin-bottom:14px"><button type="button" data-v="rec" class="on">Recepción</button><button type="button" data-v="des">Despacho</button></div>
+        <div class="form-grid">
+          <div class="field full"><label for="fContraparte" id="lblContraparte">Proveedor *</label><select id="fContraparte"></select><span class="hint" id="provHint"></span></div>
+          <div class="field"><label for="fOrigen" id="lblOrigen">Origen de la carga</label><select id="fOrigen"></select></div>
+          <div class="field"><label for="fVehiculo">Tipo de vehículo *</label><select id="fVehiculo"></select></div>
+          <div class="field"><label for="fPatente">Patente *</label><input id="fPatente" placeholder="ABCD12" maxlength="6" autocomplete="off"><span class="err-msg" data-err="fPatente"></span></div>
+          <div class="field"><label for="fConductor">Conductor *</label><input id="fConductor" placeholder="Nombre y apellido"><span class="err-msg" data-err="fConductor"></span></div>
+          <div class="field"><label for="fRut">RUT conductor *</label><input id="fRut" placeholder="12.345.678-5"><span class="err-msg" data-err="fRut"></span></div>
+          <div class="field"><label for="fFono">Teléfono *</label><input id="fFono" placeholder="+56 9 1234 5678"><span class="err-msg" data-err="fFono"></span></div>
+          <div class="field"><label for="fPallets">Pallets *</label><input id="fPallets" type="number" min="1" value="8"><span class="err-msg" data-err="fPallets"></span></div>
+          <div class="field"><label for="fUnidades">Unidades *</label><input id="fUnidades" type="number" min="1" value="600"><span class="err-msg" data-err="fUnidades"></span></div>
+          <div class="field"><label for="fCarga">Tipo de carga</label><select id="fCarga"></select></div>
+          <div class="field only-rec"><label for="fAsn">N° ASN</label><input id="fAsn" placeholder="ASN-0001"><span class="err-msg" data-err="fAsn"></span></div>
+          <div class="field full"><label for="fFecha">Fecha *</label><input id="fFecha" type="date"><span class="err-msg" data-err="fFecha"></span></div>
+          <div class="field full"><label>Bloque horario *</label><div class="slots" id="slotGrid"></div><span class="hint" id="durHint"></span><span class="err-msg" data-err="slot"></span></div>
+          <div class="field full"><label for="fAnden">Andén</label><select id="fAnden"></select><span class="hint">Recepción: andenes 1–12 (06:00–18:00) · Despacho: andenes 13–24 (06:00–22:00)</span></div>
+          <div class="field full only-rec"><label>Detalle de SKU (opcional, ingresa al WMS al cerrar)</label><div id="skuRows"></div><button type="button" class="btn ghost sm" id="addSku" style="align-self:flex-start">+ Agregar SKU</button><span class="err-msg" data-err="skus"></span></div>
+          <div class="field full"><label for="fObs">Observaciones</label><textarea id="fObs" rows="2" placeholder="Instrucciones de descarga, sello, temperatura..."></textarea></div>
+        </div>
+        <datalist id="skuList"></datalist>
+        <div class="toolbar mt"><button type="submit" class="btn accent">Reservar cita</button><button type="reset" class="btn ghost">Limpiar</button></div>
+      </form>
+
+      <!-- tablero -->
+      <div style="min-width:0">
+        <div class="card" style="padding:14px 18px">
+          <div class="tabs" style="margin-bottom:0;border:0"><button class="on" data-tab="ag-board">Tablero del día</button><button data-tab="ag-hist">Analítica histórica</button></div>
+        </div>
+        <div class="tab-pane on mt" id="ag-board">
+          <div class="toolbar" style="margin-bottom:14px">
+            <button class="btn ghost sm" id="agPrev">←</button><input type="date" id="agDate"><button class="btn ghost sm" id="agNext">→</button>
+          </div>
+          <div class="grid g-4" id="agKpis"></div>
+          <div class="card mt">
+            <div class="card-head"><div><h2>Ocupación de andenes</h2><p>Haz clic en un bloque para ver el detalle</p></div>
+              <div class="legend"><span><i style="background:var(--s1)"></i>Recepción</span><span><i style="background:var(--s2)"></i>Despacho</span><span><i style="background:#fff;box-shadow:0 0 0 2px var(--s4)"></i>En andén</span><span><i style="background:var(--s1);opacity:.45"></i>Cerrada</span><span><i style="background:var(--bad);width:2px"></i>Ahora</span></div></div>
+            <div class="timeline" id="timeline"></div>
+          </div>
+          <div class="card mt">
+            <div class="card-head"><div><h2>Citas</h2><p>Gestión de estados: check-in → operación → cierre</p></div>
+              <div class="toolbar"><input id="agQ" placeholder="Buscar código, patente o proveedor"><select id="agTipo"><option value="">Todas</option><option value="rec">Recepciones</option><option value="des">Despachos</option></select><button class="btn ghost sm" id="agExport">Exportar CSV</button></div></div>
+            <div class="table-wrap" id="agTable" style="max-height:560px"></div>
+          </div>
+        </div>
+        <div class="tab-pane mt" id="ag-hist">
+          <div class="grid g-2">
+            <div class="card span-2">
+              <div class="card-head"><div><h2>Dock-to-stock según ASN y cita</h2><p>320 recepciones de la base · horas promedio por etapa</p></div></div>
+              <div class="chart-box"><canvas id="chD2S" role="img" aria-label="Dock to stock"></canvas></div>
+            </div>
+            <div class="card span-2">
+              <div class="card-head"><div><h2>Puntualidad de arribo</h2><p>Arribo real vs hora de cita programada</p></div></div>
+              <div class="chart-box short"><canvas id="chPuntual" role="img" aria-label="Puntualidad"></canvas></div>
+            </div>
+          </div>
+          <div class="card mt">
+            <div class="card-head"><div><h2>Scorecard de proveedores (I9)</h2><p>Ordenado de menor a mayor cumplimiento de ASN</p></div></div>
+            <div class="table-wrap" id="provTable" style="max-height:420px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================== WMS -->
+  <section class="view" id="view-wms">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Inventario y ubicaciones · I6 · I7</p>
+        <h1>Mini WMS</h1>
+        <p>450 SKU del maestro analítico con stock de sistema y físico, zona actual e ideal por rotación ABC. Registra conteos cíclicos, reubicaciones y movimientos; los cambios alimentan el dashboard y la simulación de olas.</p>
+      </div>
+      <button class="btn accent" id="reslotBtn">Aplicar re-slotting ABC</button>
+    </div>
+    <div class="grid g-4" id="wmsKpis"></div>
+
+    <div class="card mt">
+      <div class="tabs"><button class="on" data-tab="w-inv">Inventario</button><button data-tab="w-ubi">Ubicaciones y zonas</button><button data-tab="w-mov">Movimientos</button><button data-tab="w-ord">Órdenes</button><button data-tab="w-dq">Calidad de datos</button></div>
+
+      <div class="tab-pane on" id="w-inv">
+        <div class="toolbar" style="margin-bottom:12px">
+          <input id="invQ" placeholder="Buscar SKU o familia" style="min-width:200px">
+          <select id="invZona"></select>
+          <select id="invAbc"><option value="">ABC: todas</option><option>A</option><option>B</option><option>C</option></select>
+          <select id="invFam"></select>
+          <select id="invFlag"><option value="">Sin alerta específica</option><option value="mismatch">Fuera de zona ideal</option><option value="dif">Con diferencia de stock</option><option value="conteo">Sin conteo &gt; 90 días</option><option value="mmc">MMC &gt; 25 kg</option><option value="interno">Sin EAN-13</option></select>
+          <span style="flex:1"></span><button class="btn ghost sm" id="invExport">Exportar CSV</button>
+        </div>
+        <div class="table-wrap" id="invTable"></div>
+        <div class="pager" id="invPager"></div>
+      </div>
+
+      <div class="tab-pane" id="w-ubi">
+        <div class="grid g-4" id="zoneCards"></div>
+        <div class="grid g-2 mt">
+          <div><h3 style="margin-bottom:10px">Matriz zona actual vs zona ideal (SKU)</h3><div class="table-wrap" id="slotMatrix"></div><p class="hint" style="margin-top:6px">Diagonal verde = SKU bien ubicados. Fuera de la diagonal = candidatos a re-slotting.</p></div>
+          <div><h3 style="margin-bottom:10px">Equipos de manejo de materiales</h3><div class="table-wrap" id="mheTable"></div></div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="w-mov">
+        <div class="toolbar" style="margin-bottom:12px"><select id="movFilter"><option value="">Todos los tipos</option><option>Recepción</option><option>Salida</option><option>Conteo cíclico</option><option>Reubicación</option></select><span style="flex:1"></span><button class="btn ghost sm" id="movExport">Exportar CSV</button></div>
+        <div class="table-wrap" id="movTable" style="max-height:520px"></div>
+      </div>
+
+      <div class="tab-pane" id="w-ord">
+        <div class="toolbar" style="margin-bottom:10px">
+          <input id="ordQ" placeholder="N° de pedido (ORD-000123)">
+          <select id="ordCanal"></select>
+          <select id="ordPerf"><option value="">Perfecto: todos</option><option value="1">Pedido perfecto</option><option value="0">No perfecto</option></select>
+          <select id="ordPeak"><option value="">Peak: todos</option><option value="1">En peak</option><option value="0">Fuera de peak</option></select>
+        </div>
+        <div class="toolbar" id="ordKpis" style="margin-bottom:12px"></div>
+        <div class="table-wrap" id="ordTable"></div>
+        <div class="pager" id="ordPager"></div>
+      </div>
+
+      <div class="tab-pane" id="w-dq">
+        <p class="muted" style="margin-bottom:12px">Hallazgos de la auditoría de datos (hoja Calidad_Datos). El saneamiento del maestro de SKU (I7) es prerrequisito del WMS con RF.</p>
+        <div class="table-wrap" id="dqTable"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================== WAVES -->
+  <section class="view" id="view-waves">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Método · I3 · I4 · I5 · I6</p>
+        <h1>Simulación de productividad por olas de picking</h1>
+        <p>Arma un turno con pedidos y líneas reales de la base, libéralos en olas y compara estrategias. Los tiempos por zona se calibran con la productividad observada para que el escenario base reproduzca las líneas/hora reales.</p>
+      </div>
+      <div class="toolbar"><button class="btn ghost" id="btnReset">Situación actual</button><button class="btn accent" id="btnPropuesta">Aplicar propuesta del informe</button></div>
+    </div>
+
+    <div class="grid g-side">
+      <div class="card" style="align-self:start">
+        <div class="card-head"><div><h2>Parámetros</h2><p>Los resultados se recalculan al instante</p></div></div>
+        <div class="form-grid">
+          <div class="field full"><label for="pEsc">Escenario de demanda</label><select id="pEsc"></select></div>
+          <div class="field full"><label for="pPed">Pedidos del turno: <b id="pPedV"></b></label><input type="range" id="pPed" min="300" max="5000" step="100"></div>
+          <div class="field full"><label for="pOlas">Número de olas: <b id="pOlasV"></b></label><input type="range" id="pOlas" min="1" max="24" step="1"></div>
+          <div class="field full"><label>Liberación de olas</label><div class="seg" id="pModo"><button type="button" data-v="fija">Calendario fijo</button><button type="button" data-v="dinamica">Dinámica con límite WIP</button></div></div>
+          <div class="field full" id="wipField"><label for="pWip">Límite WIP (olas esperando packing): <b id="pWipV"></b></label><input type="range" id="pWip" min="1" max="6" step="1"></div>
+          <div class="field full"><label>Estrategia de picking</label><div class="seg" id="pEstr"><button type="button" data-v="discreto">Discreto</button><button type="button" data-v="lotes">Por lotes</button><button type="button" data-v="zona">Por zona</button></div></div>
+          <div class="field full" id="batchField"><label for="pBatch">Pedidos por lote: <b id="pBatchV"></b></label><input type="range" id="pBatch" min="2" max="12" step="1"></div>
+          <div class="field"><label for="pPrio">Secuencia</label><select id="pPrio"><option value="sla">Prioridad SLA</option><option value="fifo">FIFO (creación)</option></select></div>
+          <div class="field"><label for="pSlot">Ubicación SKU</label><select id="pSlot"><option value="wms">Según Mini WMS</option><option value="ideal">Zona ideal ABC</option><option value="linea">Histórica (línea)</option></select></div>
+          <div class="field"><label for="pTurno">Horas de turno</label><input type="number" id="pTurno" min="4" max="12" step="0.5"></div>
+          <div class="field"><label for="pPack">Packers</label><input type="number" id="pPack" min="1" max="60"></div>
+          <div class="field full"><label for="pVel">Velocidad de desplazamiento: <b id="pVelV"></b> m/s</label><input type="range" id="pVel" min="0.6" max="2" step="0.1"></div>
+          <div class="field full"><label>Dotación de pickers por zona <span class="muted" id="dotTotal"></span></label><div class="grid g-2" id="dotInputs" style="gap:8px"></div><button type="button" class="btn ghost sm" id="btnBalance" style="align-self:flex-start;margin-top:6px">Balancear dotación según carga (incluye packing)</button></div>
+        </div>
+      </div>
+
+      <div style="min-width:0">
+        <div class="grid g-4" id="wvKpis"></div>
+        <div class="card mt">
+          <div class="card-head"><div><h2>Programa de olas (Gantt)</h2><p>Picking por zona en paralelo → consolidación → packing · línea roja = fin del turno</p></div></div>
+          <div class="gantt" id="gantt"></div>
+        </div>
+        <div class="grid g-2 mt">
+          <div class="card">
+            <div class="card-head"><div><h2>Carga vs capacidad</h2><p>Horas-persona requeridas frente a disponibles</p></div></div>
+            <div class="chart-box"><canvas id="chCarga" role="img" aria-label="Carga vs capacidad"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Cumplimiento de corte por canal</h2><p>Pedidos empacados antes de la hora de corte</p></div></div>
+            <div class="table-wrap" id="wvCanal"></div>
+            <p class="hint" style="margin-top:8px">Cortes desde el inicio del turno: Click &amp; Collect 4 h · Reposición 6 h · E-commerce y Bulky 8 h.</p>
+          </div>
+        </div>
+        <div class="card mt">
+          <div class="card-head"><div><h2>Resultado por zona</h2></div></div>
+          <div class="table-wrap" id="wvZonas"></div>
+          <p class="hint" style="margin-top:8px" id="wvSupuestos"></p>
+        </div>
+        <div class="card mt">
+          <div class="card-head"><div><h2>Comparación de escenarios</h2><p>Verde = mejor valor · rojo = peor valor</p></div><div class="toolbar"><button class="btn" id="btnSave">Guardar escenario actual</button><button class="btn ghost sm" id="btnClearComp">Limpiar</button></div></div>
+          <div id="wvComp"></div>
+        </div>
+        <div class="note mt">
+          <b>Supuestos del modelo.</b> Órdenes y líneas muestreadas de Ordenes_Muestra y Lineas_Pedido (sin canceladas). Costo hora regular CLP 9.500, hora extra CLP 14.500 y costo por error CLP 18.500 (hoja Supuestos). Tasa de error base 0,69% fuera de peak y 2,44% en peak (informe), con un recargo de 15% por cada ola adicional en picking simultáneo (congestión de pasillos). La liberación dinámica es de tipo pull: cada ola se libera para terminar su picking cuando packing se desocupa, con un colchón de (WIP − 1) olas. El picking por lotes reduce el recorrido en 1/√n y agrega 4% de manipulación por pedido adicional en el carro. Es un modelo determinístico de apoyo a la decisión, no un reemplazo de una simulación de eventos discretos.
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>AndesHome Chile S.A. · CD Pudahuel · Taller Aplicado Optimización en la Operación Logística (GLA1104) · Datos: Base_Datos_GLA1104_AndesHome_v2</span>
+  <a href="#" id="resetData">Restablecer datos de demostración</a>
+</footer>
+
+<!-- drawer, toasts, tooltip -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head"><div><h2 id="drawerTitle"></h2><p class="muted small" id="drawerSub"></p></div><button class="x-btn" id="drawerClose" aria-label="Cerrar">×</button></div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+<div class="toasts" id="toasts"></div>
+<div class="tooltip-tl" id="tlTip"></div>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="data/dashboard.js"></script>
+<script src="data/recepciones.js"></script>
+<script src="data/skus.js"></script>
+<script src="data/calidad.js"></script>
+<script src="data/ordenes.js"></script>
+<script src="data/lineas.js"></script>
+<script src="js/core.js"></script>
+<script src="js/wms.js"></script>
+<script src="js/agenda.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/waves.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
