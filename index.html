@@ -806,9 +806,25 @@ AH.charts = {};
 AH.chart = (id, config) => {
   const cv = document.getElementById(id);
   if (!cv || !window.Chart) return null;
-  if (AH.charts[id]) AH.charts[id].destroy();
-  AH.charts[id] = new Chart(cv, config);
-  return AH.charts[id];
+  try {
+    const prev = AH.charts[id];
+    // si el gráfico ya existe y es del mismo tipo, se actualiza en el mismo canvas (más estable que destruir y recrear)
+    if (prev && prev.config.type === config.type && prev.canvas === cv) {
+      prev.data.labels = config.data.labels;
+      prev.data.datasets = config.data.datasets;
+      prev.options = config.options || {};
+      prev.update();
+      return prev;
+    }
+    if (prev) prev.destroy();
+    const existing = Chart.getChart(cv);
+    if (existing) existing.destroy();
+    AH.charts[id] = new Chart(cv, config);
+    return AH.charts[id];
+  } catch (err) {
+    console.error("Error al dibujar el gráfico " + id, err);
+    return null;
+  }
 };
 
 /* ---------- validaciones chilenas ---------- */
@@ -1545,6 +1561,7 @@ AH.validPatente = (p) => /^([A-Z]{4}\d{2}|[A-Z]{2}\d{4})$/.test(String(p).replac
 
   function renderFiltered() {
     const r = rows();
+    if (!r.length) { $("#dashKpis").innerHTML = `<div class="card span-2"><p class="muted">No hay datos en el rango seleccionado (los datos van del 01-01-2026 al 30-06-2026).</p></div>`; return; }
     const sum = (i) => r.reduce((s, d) => s + d[i], 0);
     const ped = sum(2), at = sum(4), perf = sum(5);
     const dias = [...new Set(r.map((d) => d[0]))];
@@ -1685,8 +1702,25 @@ AH.validPatente = (p) => /^([A-Z]{4}\d{2}|[A-Z]{2}\d{4})$/.test(String(p).replac
       $("#dDesde").value = f.desde; $("#dHasta").value = f.hasta;
       $("#dDesde").min = $("#dHasta").min = DI[0][0]; $("#dDesde").max = $("#dHasta").max = DI[DI.length - 1][0];
       $("#dCanal").addEventListener("change", (e) => { f.canal = e.target.value; renderFiltered(); });
-      $("#dDesde").addEventListener("change", (e) => { f.desde = e.target.value || DI[0][0]; renderFiltered(); });
-      $("#dHasta").addEventListener("change", (e) => { f.hasta = e.target.value || DI[DI.length - 1][0]; renderFiltered(); });
+      // fechas: se aceptan solo fechas completas dentro del rango de datos; se espera a que el usuario termine de escribir
+      const MIN = DI[0][0], MAX = DI[DI.length - 1][0];
+      const valid = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || "") && v >= "2000-01-01";
+      let tFecha = null;
+      const onFecha = () => {
+        clearTimeout(tFecha);
+        tFecha = setTimeout(() => {
+          const dv = $("#dDesde").value, hv = $("#dHasta").value;
+          if ((dv && !valid(dv)) || (hv && !valid(hv))) return; // fecha a medio escribir: se espera
+          let d = dv || MIN, h = hv || MAX;
+          d = d < MIN ? MIN : d > MAX ? MAX : d; h = h < MIN ? MIN : h > MAX ? MAX : h;
+          if (d > h) [d, h] = [h, d];
+          f.desde = d; f.hasta = h;
+          if (dv !== d) $("#dDesde").value = d;
+          if (hv !== h) $("#dHasta").value = h;
+          renderFiltered();
+        }, 400);
+      };
+      ["input", "change", "blur"].forEach((ev) => { $("#dDesde").addEventListener(ev, onFecha); $("#dHasta").addEventListener(ev, onFecha); });
       $$("#dGran button").forEach((b) => b.addEventListener("click", () => { f.gran = b.dataset.v; $$("#dGran button").forEach((x) => x.classList.toggle("on", x === b)); renderFiltered(); }));
       $$("[data-preset]").forEach((b) => b.addEventListener("click", () => {
         const p = b.dataset.preset;
